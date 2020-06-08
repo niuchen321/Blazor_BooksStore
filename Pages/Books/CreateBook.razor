@@ -1,0 +1,152 @@
+﻿@page "/createbook"
+@using Models
+@using BooksStore.Service
+@inject BookCategoryService BookCategoryService
+@inject BooksService BooksService
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
+
+<h3>添加图书分类</h3>
+
+<div class="row">
+    <div class="col-md-6">
+        <EditForm EditContext="editContext" OnValidSubmit="HandleValidSubmit" class="">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+            <div class="form-group row">
+                <label class="col-sm-2 col-form-label text-right">书籍名称：</label>
+                <div class="col-sm-9">
+                    <InputText @bind-Value="book.Name" placeholder="请输入书籍名称" class="form-control " />
+                </div>
+
+            </div>
+            <div class="form-group row">
+                <label class="col-sm-2 col-form-label text-right">
+                    书籍类型：
+                </label>
+                <div class="col-sm-9">
+                    <InputSelect @bind-Value="book.CategoryId" class="form-control ">
+                        <option value="">请选择</option>
+                        @foreach (var bookCategory in bookCategories)
+                        {
+                            <option value="@bookCategory.Id">@bookCategory.Name</option>
+                        }
+                    </InputSelect>
+                </div>
+            </div>
+            <div class="form-group row">
+                <label class="col-sm-2 col-form-label text-right">
+                    作者：
+                </label>
+                <div class="col-sm-9">
+                    <InputText @bind-Value="book.Author" placeholder="请输入作者名称" class="form-control " />
+                </div>
+            </div>
+            <div class="form-group row">
+                <label class="col-sm-2 col-form-label text-right">
+                    出版社：
+                </label>
+                <div class="col-sm-9">
+                    <InputText @bind-Value="book.Press" placeholder="请输入出版社" class="form-control " />
+                </div>
+            </div>
+            <div class="form-group row">
+                <label class="col-sm-2 col-form-label text-right">
+                    价格：
+                </label>
+                <div class="col-sm-9">
+                    <InputNumber @bind-Value="book.Price" placeholder="请输入价格" class="form-control " />
+                </div>
+            </div>
+            <div class="form-group row">
+                <label class="col-sm-2 col-form-label text-right">
+                    出版时间：
+                </label>
+                <div class="col-sm-9">
+                    <InputDate @bind-Value="book.Pubtime" placeholder="请输入出版时间" class="form-control " />
+                </div>
+            </div>
+            <div class="form-group row">
+                <label class="col-sm-2 col-form-label text-right">
+                    预览内容：
+                </label>
+                <div class="col-sm-9">
+                    <InputTextArea @bind-Value="book.Content" placeholder="请输入预览内容" class="form-control " />
+                </div>
+            </div>
+            <div class="form-group row">
+                <label class="col-sm-2 col-form-label text-right">
+                    简介：
+                </label>
+                <div class="col-sm-9">
+                    <InputTextArea @bind-Value="book.Introduction" placeholder="请输入简介" class="form-control " />
+                </div>
+            </div>
+            <div class="form-group row">
+                <label class="col-sm-2 col-form-label text-right">
+                    是否热门：
+                </label>
+                <div class="col-sm-9">
+                    <InputCheckbox @bind-Value="book.IsHot" />
+                </div>
+            </div>
+            <div class="form-group row">
+                <label class="col-sm-2 col-form-label text-right">
+                    是否可用：
+                </label>
+                <div class="col-sm-9">
+                    <InputCheckbox @bind-Value="book.Enabled" />
+                </div>
+
+            </div>
+            <div class="form-group" disabled="@formInvalid">
+                <input type="submit" value="添加" class="btn btn-primary" disabled="@formInvalid" />
+                <a class="btn btn-info" href="book">返回列表</a>
+            </div>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    private Book book = new Book();
+
+    private List<BookCategory> bookCategories=new List<BookCategory>();
+
+    private bool formInvalid = true;
+    private EditContext editContext;
+
+    protected override  async Task OnInitializedAsync()
+    {
+        editContext = new EditContext(book);
+
+        editContext.OnFieldChanged += HandleFieldChanged;
+        bookCategories = await BookCategoryService.OnGetAsync();
+    }
+
+    private void HandleFieldChanged(object sender, FieldChangedEventArgs e)
+    {
+        formInvalid = !editContext.Validate();
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        editContext.OnFieldChanged -= HandleFieldChanged;
+    }
+    private async Task HandleValidSubmit()
+    {
+        var result = await BooksService.Insert(book);
+
+        if (result > 0)
+        {
+            NavigationManager.NavigateTo("books");
+        }
+        else
+        {
+            await JSRuntime.InvokeAsync<bool>(
+               "exampleJsFunctions.showMessage",
+               "保存失败");
+        }
+    }
+
+}

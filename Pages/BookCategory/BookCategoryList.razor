@@ -1,0 +1,174 @@
+﻿@page "/bookCategory"
+@using BooksStore.Models
+@using BooksStore.Service
+@inject BookCategoryService BookCategoryService
+@inject BooksService BooksService
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
+
+<a class="btn btn-info" href="createBookCategory">新增</a>
+@if (bookCategories == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <EditForm EditContext="editContext">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>类型名称</th>
+                    <th>类型图片</th>
+                    <th>是否可用</th>
+                    <th>是否热门</th>
+                    <th>排序</th>
+                    <th>创建时间</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var bookCategory in bookCategories)
+                {
+                <tr>
+                    <td>@bookCategory.Name</td>
+                    <td>
+                        <img src="@bookCategory.Img" alt="Alternate Text" />
+                    </td>
+                    <td>
+                        <InputCheckbox @bind-Value="bookCategory.Enabled" @onclick="(()=>OnChangeEnabled(bookCategory.Id))" />
+                    </td>
+                    <td><InputCheckbox @bind-Value="bookCategory.IsHot" @onclick="(()=>OnChangeIsHot(bookCategory.Id))" /></td>
+                    <td>@bookCategory.Sort</td>
+                    <td>@bookCategory.CreateTime.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                    <td>
+                        <a class="btn btn-link" href="editBookCategory/@bookCategory.Id">编辑</a>
+                        <a class="btn btn-link" href="#" @onclick="(()=>OnDelete(bookCategory.Id))">删除</a>
+                    </td>
+                </tr>
+                }
+            </tbody>
+        </table>
+
+    </EditForm>
+}
+
+@code {
+    /// <summary>
+    /// 图书类型集合
+    /// </summary>
+    private List<BookCategory> bookCategories;
+    private EditContext editContext;
+    /// <summary>
+    /// 初始化
+    /// </summary>
+    /// <returns></returns>
+    protected override async Task OnInitializedAsync()
+    {
+        bookCategories = await BookCategoryService.OnGetAsync();
+
+        if (bookCategories != null)
+        {
+            editContext = new EditContext(bookCategories);
+        }
+
+    }
+    /// <summary>
+    /// 修改是否可用
+    /// </summary>
+    /// <param name="id"></param>
+    /// <returns></returns>
+    private async Task OnChangeEnabled(string id)
+    {
+        var flag = await JSRuntime.InvokeAsync<bool>(
+                 "exampleJsFunctions.showMessage",
+                 "确定执行操作?");
+        if (flag)
+        {
+            var result = await BookCategoryService.EditEnabled(id);
+
+            if (result > 0)
+            {
+                NavigationManager.NavigateTo("bookCategory");
+            }
+            else
+            {
+                await JSRuntime.InvokeAsync<bool>(
+                "exampleJsFunctions.showMessage",
+                "修改失败");
+            }
+        }
+        ShouldRender();
+    }
+    /// <summary>
+    /// 修改是否热门
+    /// </summary>
+    /// <param name="id"></param>
+    /// <returns></returns>
+    private async Task OnChangeIsHot(string id)
+    {
+        var flag = await JSRuntime.InvokeAsync<bool>(
+                "exampleJsFunctions.showMessage",
+                "确定执行操作?");
+        if (flag)
+        {
+            var result = await BookCategoryService.EditIsHot(id);
+
+            if (result > 0)
+            {
+                NavigationManager.NavigateTo("bookCategory");
+            }
+            else
+            {
+                await JSRuntime.InvokeAsync<bool>(
+                "exampleJsFunctions.showMessage",
+                "修改失败");
+            }
+        }
+        ShouldRender();
+    }
+    protected override bool ShouldRender()
+    {
+        var renderUI = true;
+
+        return renderUI;
+    }
+    /// <summary>
+    /// 删除
+    /// </summary>
+    /// <param name="id"></param>
+    /// <returns></returns>
+    private async Task OnDelete(string id)
+    {
+        var result = await JSRuntime.InvokeAsync<bool>(
+                "exampleJsFunctions.showMessage",
+                "确定删除操作?");
+        if (result)
+        {
+            result =await BooksService.BookExistsCategoryId(id);
+
+            if (result)
+            {
+                 await JSRuntime.InvokeAsync<bool>(
+                "exampleJsFunctions.showMessage",
+                "分类下存在图书无法删除！");
+            }
+
+            var del = await BookCategoryService.Delete(id);
+
+            if (del > 0)
+            {
+                NavigationManager.NavigateTo("bookCategory");
+            }
+            else
+            {
+                await JSRuntime.InvokeAsync<bool>(
+                "exampleJsFunctions.showMessage",
+                "删除失败");
+            }
+
+        }
+    }
+}
+
