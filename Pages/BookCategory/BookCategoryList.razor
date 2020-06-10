@@ -34,7 +34,7 @@ else
                 <tr>
                     <td>@bookCategory.Name</td>
                     <td>
-                        <img src="@bookCategory.Img" alt="Alternate Text" />
+                        <img src="@(Getimage(bookCategory.Img))"  class="img-thumbnail" height="50" width="50" alt="Alternate Text" />
                     </td>
                     <td>
                         <InputCheckbox @bind-Value="bookCategory.Enabled" @onclick="(()=>OnChangeEnabled(bookCategory.Id))" />
@@ -150,9 +150,9 @@ else
 
             if (result)
             {
-                 await JSRuntime.InvokeAsync<bool>(
-                "exampleJsFunctions.showMessage",
-                "分类下存在图书无法删除！");
+                await JSRuntime.InvokeAsync<bool>(
+               "exampleJsFunctions.showMessage",
+               "分类下存在图书无法删除！");
             }
 
             var del = await BookCategoryService.Delete(id);
@@ -169,6 +169,17 @@ else
             }
 
         }
+    }
+    /// <summary>
+    /// 获取base64图片
+    /// </summary>
+    /// <param name="path"></param>
+    /// <returns></returns>
+    private string Getimage(string path)
+    {
+        var image= BookCategoryService.GetImage(path);
+
+        return "data:image/jpg;base64," + image;
     }
 }
 

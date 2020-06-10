@@ -21,6 +21,7 @@ else
                 <tr>
                     <th>书籍名称</th>
                     <th>书籍类型</th>
+                    <th>图片</th>
                     <th>作者</th>
                     <th>出版社</th>
                     <th>价格</th>
@@ -34,23 +35,26 @@ else
             <tbody>
                 @foreach (var book in books)
                 {
-                    <tr>
-                        <td>@book.Name</td>
-                        <td>@(bookCategories.ContainsKey(book.CategoryId)?bookCategories[book.CategoryId]?.Name:"")</td>
-                        <td>@book.Author</td>
-                        <td>@book.Press</td>
-                        <td>@book.Price</td>
-                        <td>
-                            <InputCheckbox @bind-Value="book.Enabled" @onclick="(()=>OnChangeEnabled(book.Id))" />
-                        </td>
-                        <td><InputCheckbox @bind-Value="book.IsHot" @onclick="(()=>OnChangeIsHot(book.Id))" /></td>
-                        <td>@book.Pubtime.ToString("yyyy-MM-dd HH:mm:ss")</td>
-                        <td>@book.CreateTime.ToString("yyyy-MM-dd HH:mm:ss")</td>
-                        <td>
-                            <a class="btn btn-link" href="editbook/@book.Id">编辑</a>
-                            <button class="btn btn-link" href="#" @onclick="(()=>OnDelete(book.Id))">删除</button>
-                        </td>
-                    </tr>
+                <tr>
+                    <td>@book.Name</td>
+                    <td>@(bookCategories.ContainsKey(book.CategoryId) ? bookCategories[book.CategoryId]?.Name : "")</td>
+                    <td>
+                        <img src="@(Getimage(book.Img))" class="img-thumbnail"  height="50" width="50" alt="Alternate Text" />
+                    </td>
+                    <td>@book.Author</td>
+                    <td>@book.Press</td>
+                    <td>@book.Price</td>
+                    <td>
+                        <InputCheckbox @bind-Value="book.Enabled" @onclick="(()=>OnChangeEnabled(book.Id))" />
+                    </td>
+                    <td><InputCheckbox @bind-Value="book.IsHot" @onclick="(()=>OnChangeIsHot(book.Id))" /></td>
+                    <td>@book.Pubtime.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                    <td>@book.CreateTime.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                    <td>
+                        <a class="btn btn-link" href="editbook/@book.Id">编辑</a>
+                        <button class="btn btn-link" href="#" @onclick="(()=>OnDelete(book.Id))">删除</button>
+                    </td>
+                </tr>
                 }
             </tbody>
         </table>
@@ -176,6 +180,17 @@ else
 
         }
         ShouldRender();
+    }
+    /// <summary>
+    /// 获取base64图片
+    /// </summary>
+    /// <param name="path"></param>
+    /// <returns></returns>
+     private string Getimage(string path)
+    {
+        var image= BookCategoryService.GetImage(path);
+
+        return "data:image/jpg;base64," + image;
     }
 }
 

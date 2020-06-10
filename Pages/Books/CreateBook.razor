@@ -84,6 +84,15 @@
             </div>
             <div class="form-group row">
                 <label class="col-sm-2 col-form-label text-right">
+                    图片：
+                </label>
+                <div class="col-sm-9">
+                    <input type="file" name="fileImg" id="fileImg" class="form-control" @onchange="OnChangeImg" />
+                    <img src="@book.Img" height="200" alt="Image preview...">
+                </div>
+            </div>
+            <div class="form-group row">
+                <label class="col-sm-2 col-form-label text-right">
                     是否热门：
                 </label>
                 <div class="col-sm-9">
@@ -110,12 +119,12 @@
 @code {
     private Book book = new Book();
 
-    private List<BookCategory> bookCategories=new List<BookCategory>();
+    private List<BookCategory> bookCategories = new List<BookCategory>();
 
     private bool formInvalid = true;
     private EditContext editContext;
 
-    protected override  async Task OnInitializedAsync()
+    protected override async Task OnInitializedAsync()
     {
         editContext = new EditContext(book);
 
@@ -135,6 +144,13 @@
     }
     private async Task HandleValidSubmit()
     {
+        if (string.IsNullOrEmpty(book.Img))
+        {
+            book.Img = await JSRuntime.InvokeAsync<string>(
+                   "exampleJsFunctions.getImgUrl",
+                   "fileImg");
+        }
+
         var result = await BooksService.Insert(book);
 
         if (result > 0)
@@ -148,5 +164,14 @@
                "保存失败");
         }
     }
+    /// <summary>
+    /// 上传图片变化时修改预览图片
+    /// </summary>
+    /// <returns></returns>
+    public async Task OnChangeImg()
+    {
 
+        var img = await JSRuntime.InvokeAsync<string>(
+               "exampleJsFunctions.fileloaded");
+    }
 }

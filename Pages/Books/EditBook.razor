@@ -84,6 +84,15 @@
             </div>
             <div class="form-group row">
                 <label class="col-sm-2 col-form-label text-right">
+                    图片：
+                </label>
+                <div class="col-sm-9">
+                    <input type="file" name="fileImg" id="fileImg" class="form-control" @onchange="OnChangeImg" />
+                    <img src="@(Getimage(book.Img))" height="200" alt="Image preview...">
+                </div>
+            </div>
+            <div class="form-group row">
+                <label class="col-sm-2 col-form-label text-right">
                     是否热门：
                 </label>
                 <div class="col-sm-9">
@@ -138,6 +147,13 @@
     }
     private async Task HandleValidSubmit()
     {
+        if (string.IsNullOrEmpty(book.Img))
+        {
+            book.Img = await JSRuntime.InvokeAsync<string>(
+                   "exampleJsFunctions.getImgUrl",
+                   "fileImg");
+        }
+
         var result = await BooksService.Edit(book);
 
         if (result > 0)
@@ -151,5 +167,24 @@
                "保存失败");
         }
     }
+    /// <summary>
+    ///上传图片修改时，修改预览图片
+    /// </summary>
+    /// <returns></returns>
+    public async Task OnChangeImg()
+    {
+        var img = await JSRuntime.InvokeAsync<string>(
+               "exampleJsFunctions.fileloaded");
+    }
+    /// <summary>
+    /// 获取base64图片
+    /// </summary>
+    /// <param name="path"></param>
+    /// <returns></returns>
+     private string Getimage(string path)
+    {
+        var image= BookCategoryService.GetImage(path);
 
+        return "data:image/jpg;base64," + image;
+    }
 }

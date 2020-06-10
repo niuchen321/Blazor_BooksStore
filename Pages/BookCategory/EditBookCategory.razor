@@ -12,7 +12,7 @@
         <EditForm Model="bookCategory" OnValidSubmit="HandleValidSubmit" class="">
             <DataAnnotationsValidator />
             <ValidationSummary />
-          @*  <InputNumber type="hidden" @bind-Value="bookCategory.Id"/>*@
+            @*  <InputNumber type="hidden" @bind-Value="bookCategory.Id"/>*@
             <div class="form-group row">
                 <label class="col-sm-2 col-form-label text-right">类型名称：</label>
                 <div class="col-sm-9">
@@ -20,6 +20,7 @@
                 </div>
 
             </div>
+
             <div class="form-group row">
                 <label class="col-sm-2 col-form-label text-right">
                     类型说明：
@@ -34,6 +35,15 @@
                 </label>
                 <div class="col-sm-9">
                     <InputNumber @bind-Value="bookCategory.Sort" class="form-control" />
+                </div>
+            </div>
+            <div class="form-group row">
+                <label class="col-sm-2 col-form-label text-right">
+                    类型图片：
+                </label>
+                <div class="col-sm-9">
+                    <input type="file" name="fileImg" id="fileImg" class="form-control" @onchange="OnChangeImg" />
+                    <img src="@(Getimage(bookCategory.Img))" height="200" alt="Image preview...">
                 </div>
             </div>
             <div class="form-group row">
@@ -67,12 +77,12 @@
 
     private bool formInvalid = true;
     private EditContext editContext;
-   [Parameter]
+    [Parameter]
     public string Id { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
-       bookCategory =await BookCategoryService.OnGetModelAsync(Id);
+        bookCategory = await BookCategoryService.OnGetModelAsync(Id);
 
         editContext = new EditContext(bookCategory);
         editContext.OnFieldChanged += HandleFieldChanged;
@@ -90,6 +100,13 @@
     }
     private async Task HandleValidSubmit()
     {
+        if (string.IsNullOrEmpty(bookCategory.Img))
+        {
+            bookCategory.Img = await JSRuntime.InvokeAsync<string>(
+                   "exampleJsFunctions.getImgUrl",
+                   "fileImg");
+        }
+
         var result = await BookCategoryService.Edit(bookCategory);
 
         if (result > 0)
@@ -104,4 +121,28 @@
         }
     }
 
+    /// <summary>
+    /// 上传图片变化时修改预览图片
+    /// </summary>
+    /// <param name="e"></param>
+    /// <returns></returns>
+    public async Task OnChangeImg()
+    {
+
+        var img = await JSRuntime.InvokeAsync<string>(
+               "exampleJsFunctions.fileloaded");
+
+        bookCategory.Img = "";
+    }
+    /// <summary>
+    /// 获取base64图片
+    /// </summary>
+    /// <param name="path"></param>
+    /// <returns></returns>
+    private string Getimage(string path)
+    {
+        var image = BookCategoryService.GetImage(path);
+
+        return "data:image/jpg;base64," + image;
+    }
 }

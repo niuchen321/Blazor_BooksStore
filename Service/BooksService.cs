@@ -2,6 +2,9 @@
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
+using System.Drawing.Imaging;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -35,6 +38,13 @@ namespace BooksStore.Service
         /// <returns>添加成功条数</returns>
         public async Task<int> Insert(Book book)
         {
+            if (!string.IsNullOrEmpty(book.Img))
+            {
+                var filePath = "/UploadFile/";
+
+                book.Img = Transport(book.Img, filePath, DateTime.Now.ToString("yyyyMMddHHmmss") + ".jpg");
+            }
+
             book.CreateTime = DateTime.Now;
             book.EditTime = DateTime.Now;
             book.Id = Guid.NewGuid().ToString().Replace("-", "");
@@ -61,7 +71,12 @@ namespace BooksStore.Service
             {
                 return 0;
             }
+            if (!string.IsNullOrEmpty(book.Img) && !File.Exists(book.Img))
+            {
+                var filePath = "/UploadFile/";
 
+                book.Img = Transport(book.Img, filePath, DateTime.Now.ToString("yyyyMMddHHmmss") + ".jpg");
+            }
             book.EditTime = DateTime.Now;
 
             _context.Attach(book).State = EntityState.Modified;
@@ -173,6 +188,74 @@ namespace BooksStore.Service
         public async Task<bool> BookExistsCategoryId(string categoryId)
         {
             return await _context.Book.AnyAsync(e => e.CategoryId == categoryId);
+        }
+
+        /// <summary>
+        /// 根据base64向远程文件夹保存图片
+        /// </summary>
+        /// <param name="src">要保存的文件的base64字符串</param>
+        /// <param name="dst">保存文件的相对路径，不含名称及扩展名</param>
+        /// <param name="fileName">保存文件的名称以及扩展名</param>
+        public static string Transport(string src, string dst, string fileName)
+        {
+            try
+            {
+                //过滤特殊字符即可    
+                var imgType = src.Substring(src.IndexOf("/"), src.IndexOf(";") - src.IndexOf("/"));
+
+                src = src.Substring(src.IndexOf(",") + 1);//将‘，’以前的多余字符串删除
+
+                //将纯净资源Base64转换成等效的8位无符号整形数组
+                var imgByte = Convert.FromBase64String(src);
+                //转换成无法调整大小的MemoryStream对象
+                using (MemoryStream memory = new MemoryStream(imgByte))
+                {
+                    if (!Directory.Exists(dst))
+                    {
+                        Directory.CreateDirectory(dst);
+                    }
+
+                    Image image = Image.FromStream(memory);
+
+                    dst = Directory.GetCurrentDirectory() + dst + fileName;
+
+                    image.Save(dst, ImageFormat.Jpeg);
+                    return dst;
+                }
+            }
+            catch (Exception ex)
+            {
+            }
+            return "";
+        }
+
+        /// <summary>
+        /// 根据图片地址获取图片流
+        /// </summary>
+        /// <param name="path"></param>
+        /// <returns></returns>
+        public string GetImage(string path)
+        {
+            try
+            {
+
+                FileStream fs = new FileStream(path, FileMode.Open, FileAccess.Read);
+
+                int length = (int)fs.Length;
+
+                byte[] image = new byte[length];
+
+                fs.Read(image, 0, length);
+
+                fs.Close();
+
+                return Convert.ToBase64String(image);
+            }
+            catch (Exception ex)
+            {
+
+                throw;
+            }
         }
     }
 }

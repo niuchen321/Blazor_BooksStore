@@ -2,8 +2,11 @@
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
+using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
+using System.Reflection.Metadata;
 using System.Threading.Tasks;
 
 namespace BooksStore.Service
@@ -39,8 +42,8 @@ namespace BooksStore.Service
             if (!string.IsNullOrEmpty(bookCategory.Img))
             {
                 var filePath = "/UploadFile/";
-                
-                Transport(bookCategory.Img, filePath, Path.GetFileName(bookCategory.Img));
+
+                bookCategory.Img = Transport(bookCategory.Img, filePath, DateTime.Now.ToString("yyyyMMddHHmmss") + ".jpg");
             }
 
             bookCategory.CreateTime = DateTime.Now;
@@ -69,7 +72,12 @@ namespace BooksStore.Service
             {
                 return 0;
             }
+            if (!string.IsNullOrEmpty(bookCategory.Img) && !File.Exists(bookCategory.Img))
+            {
+                var filePath = "/UploadFile/";
 
+                bookCategory.Img = Transport(bookCategory.Img, filePath, DateTime.Now.ToString("yyyyMMddHHmmss") + ".jpg");
+            }
             bookCategory.EditTime = DateTime.Now;
 
             _context.Attach(bookCategory).State = EntityState.Modified;
@@ -180,42 +188,75 @@ namespace BooksStore.Service
         }
 
         /// <summary>
-        /// 向远程文件夹保存本地内容，或者从远程文件夹下载文件到本地
+        /// 根据base64向远程文件夹保存图片
         /// </summary>
-        /// <param name="src">要保存的文件的路径，如果保存文件到共享文件夹，这个路径就是本地文件路径如：@"D:\1.avi"</param>
-        /// <param name="dst">保存文件的路径，不含名称及扩展名</param>
+        /// <param name="src">要保存的文件的base64字符串</param>
+        /// <param name="dst">保存文件的相对路径，不含名称及扩展名</param>
         /// <param name="fileName">保存文件的名称以及扩展名</param>
-        public static void Transport(string src, string dst, string fileName)
+        public static string Transport(string src, string dst, string fileName)
         {
-
-            FileStream inFileStream = new FileStream(src, FileMode.Open);
-            if (!Directory.Exists(dst))
+            try
             {
-                Directory.CreateDirectory(dst);
+                //过滤特殊字符即可    
+                var imgType = src.Substring(src.IndexOf("/"), src.IndexOf(";") - src.IndexOf("/"));
+
+                src = src.Substring(src.IndexOf(",") + 1);//将‘，’以前的多余字符串删除
+
+                //将纯净资源Base64转换成等效的8位无符号整形数组
+                var imgByte = Convert.FromBase64String(src);
+                //转换成无法调整大小的MemoryStream对象
+                using (MemoryStream memory = new MemoryStream(imgByte))
+                {
+                    if (!Directory.Exists(dst))
+                    {
+                        Directory.CreateDirectory(dst);
+                    }
+
+                    Image image = Image.FromStream(memory);
+
+                    dst = Directory.GetCurrentDirectory() + dst + fileName;
+
+                    image.Save(dst, ImageFormat.Jpeg);
+                    return dst;
+                }
             }
-            dst = dst + fileName;
-            FileStream outFileStream = new FileStream(dst, FileMode.OpenOrCreate);
-
-            byte[] buf = new byte[inFileStream.Length];
-
-            int byteCount;
-
-            while ((byteCount = inFileStream.Read(buf, 0, buf.Length)) > 0)
+            catch (Exception ex)
             {
-
-                outFileStream.Write(buf, 0, byteCount);
-
             }
-
-            inFileStream.Flush();
-
-            inFileStream.Close();
-
-            outFileStream.Flush();
-
-            outFileStream.Close();
-
+            return "";
         }
 
+        /// <summary>
+        /// 根据图片地址获取图片流
+        /// </summary>
+        /// <param name="path"></param>
+        /// <returns></returns>
+        public  string GetImage(string path)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(path))
+                {
+                    return "";
+                }
+
+                FileStream fs = new FileStream(path, FileMode.Open, FileAccess.Read);
+
+                int length = (int)fs.Length;
+
+                byte[] image = new byte[length];
+
+                fs.Read(image, 0, length);
+
+                fs.Close();
+
+                return Convert.ToBase64String(image);
+            }
+            catch (Exception ex)
+            {
+
+                throw;
+            }
+        }
     }
 }

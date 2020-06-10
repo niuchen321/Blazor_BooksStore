@@ -34,7 +34,7 @@ namespace BooksStore.Models
         /// <summary>
         /// 图片
         /// </summary>
-        [StringLength(50)]
+        [StringLength(500)]
         [Display(Name = "图片")]
         public string Img { get; set; }
         /// <summary>
